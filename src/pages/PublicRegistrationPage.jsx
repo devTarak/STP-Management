@@ -378,7 +378,11 @@ export default function PublicRegistrationPage() {
     }
   };
 
-  const getFileUrl = (path) => path ? `/${path.replace(/^\//, '')}` : '';
+  const getFileUrl = (path) => {
+    if (!path) return '';
+    const base = api.defaults.baseURL.replace(/\/api\/?$/, '');
+    return `${base}/${path.replace(/^\//, '')}`;
+  };
 
   const fileSpecs = {
     photo: { label: 'Photograph', accept: 'image/jpeg,image/png', hint: '300x300px, JPG/PNG' },
