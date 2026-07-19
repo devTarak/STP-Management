@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { ReactCrop, convertToPixelCrop, makeAspectCrop, centerCrop } from 'react-image-crop';
+import { ReactCrop, makeAspectCrop, centerCrop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
 import { useParams, useSearchParams } from 'react-router-dom';
 import {
@@ -247,12 +247,23 @@ export default function PublicRegistrationPage() {
     const img = new Image();
     img.src = cropSrc;
     await new Promise((resolve) => { img.onload = resolve; });
+    const displayed = imgRef.current;
+    if (!displayed) return;
+    const rendered = displayed.getBoundingClientRect();
+    if (!rendered.width || !rendered.height) return;
+    const scaleX = img.naturalWidth / rendered.width;
+    const scaleY = img.naturalHeight / rendered.height;
     const canvas = document.createElement('canvas');
-    const pixelCrop = convertToPixelCrop(crop, img.width, img.height);
-    canvas.width = pixelCrop.width;
-    canvas.height = pixelCrop.height;
+    canvas.width = Math.round(crop.width * scaleX);
+    canvas.height = Math.round(crop.height * scaleY);
     const ctx = canvas.getContext('2d');
-    ctx.drawImage(img, pixelCrop.x, pixelCrop.y, pixelCrop.width, pixelCrop.height, 0, 0, pixelCrop.width, pixelCrop.height);
+    ctx.drawImage(
+      img,
+      crop.x * scaleX, crop.y * scaleY,
+      crop.width * scaleX, crop.height * scaleY,
+      0, 0,
+      canvas.width, canvas.height,
+    );
     canvas.toBlob((blob) => {
       if (!blob) { alert('Crop failed'); return; }
       const croppedFile = new File([blob], cropFile.name.replace(/\.[^.]+$/, '.jpg'), { type: 'image/jpeg' });
@@ -445,16 +456,16 @@ export default function PublicRegistrationPage() {
                   if (type === 'photo' || type === 'sig') {
                     const src = URL.createObjectURL(file);
                     const img = new Image();
-                    img.src = src;
+                    const aspect = type === 'photo' ? 1 : 3;
                     img.onload = () => {
-                      const aspect = type === 'photo' ? 1 : 3;
                       const pc = centerCrop(
-                        makeAspectCrop({ unit: '%', width: 100, height: 100 }, aspect, img.naturalWidth, img.naturalHeight),
+                        makeAspectCrop({ unit: '%', width: 100 }, aspect, img.naturalWidth, img.naturalHeight),
                         img.naturalWidth,
                         img.naturalHeight,
                       );
                       setCrop(pc);
                     };
+                    img.src = src;
                     setCropType(type);
                     setCropFile(file);
                     setCropSrc(src);
