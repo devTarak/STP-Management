@@ -1,6 +1,8 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Box, Paper, Typography, TextField, Button, Stack, Grid, Avatar, IconButton, CircularProgress, Autocomplete } from '@mui/material';
-import { PhotoCamera } from '@mui/icons-material';
+import { PhotoCamera, QrCode } from '@mui/icons-material';
+import QRCode from 'qrcode';
+import api from '@/config/api';
 import { useSiteSettings, useUpdateSiteSettings } from '@/hooks/useSiteSettings';
 import { useDivisions, useDistricts, useUpazilas } from '@/hooks/useBdAddress';
 
@@ -15,6 +17,7 @@ export default function SiteSettingsPage() {
   });
   const [files, setFiles] = useState({ favicon: null, stamp: null });
   const [previews, setPreviews] = useState({ favicon: null, stamp: null });
+  const [qrLoading, setQrLoading] = useState(false);
 
   const { data: divisions = [] } = useDivisions();
   const { data: districts = [] } = useDistricts(form.division_id || null);
@@ -65,7 +68,57 @@ export default function SiteSettingsPage() {
     updateMutation.mutate(formData);
   };
 
-  if (isLoading) return <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}><CircularProgress /></Box>;
+  const handleDownloadQr = useCallback(async () => {
+    if (!settings?.slug) return;
+    setQrLoading(true);
+    try {
+      const url = `${window.location.origin}/stp/${settings.slug}`;
+      const size = 400;
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      await QRCode.toCanvas(canvas, url, { width: size, margin: 2, errorCorrectionLevel: 'H', color: { dark: '#1a3a6b', light: '#ffffff' } });
+
+      if (settings.stamp_url) {
+        const ctx = canvas.getContext('2d');
+        try {
+          const res = await api.get(`institutes/${settings.institute_id}/documents/stamp`, { responseType: 'blob' });
+          const blobUrl = URL.createObjectURL(res.data);
+          const img = await new Promise((resolve, reject) => {
+            const i = new Image();
+            i.onload = () => resolve(i);
+            i.onerror = reject;
+            i.src = blobUrl;
+          });
+          const stampSize = size * 0.22;
+          const cx = (size - stampSize) / 2;
+          const cy = cx;
+          ctx.fillStyle = '#ffffff';
+          ctx.beginPath();
+          ctx.arc(size / 2, size / 2, stampSize / 2 + 4, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(size / 2, size / 2, stampSize / 2, 0, Math.PI * 2);
+          ctx.clip();
+          ctx.drawImage(img, cx, cy, stampSize, stampSize);
+          ctx.restore();
+          URL.revokeObjectURL(blobUrl);
+        } catch {
+          // stamp overlay failed — QR code without stamp is fine
+        }
+      }
+
+      const link = document.createElement('a');
+      link.download = `QR_${settings.slug || 'institute'}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    } catch (err) {
+      console.error('QR generation failed:', err);
+    } finally {
+      setQrLoading(false);
+    }
+  }, [settings]);
 
   return (
     <Box>
@@ -138,6 +191,21 @@ export default function SiteSettingsPage() {
             <Button variant="contained" type="submit" disabled={updateMutation.isPending}>Save Settings</Button>
           </Stack>
         </Stack>
+      </Paper>
+
+      <Paper elevation={0} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 3, p: 3, maxWidth: 800, mt: 3 }}>
+        <Typography variant="subtitle1" fontWeight={600} mb={2}>QR Code</Typography>
+        <Typography variant="body2" color="text.secondary" mb={2}>
+          Download a QR code that links to your institute&#39;s public page. The institute stamp is embedded in the center.
+        </Typography>
+        <Button
+          variant="contained"
+          startIcon={qrLoading ? <CircularProgress size={20} color="inherit" /> : <QrCode />}
+          onClick={handleDownloadQr}
+          disabled={qrLoading || !settings?.slug}
+        >
+          {qrLoading ? 'Generating...' : 'Download QR Code'}
+        </Button>
       </Paper>
     </Box>
   );
