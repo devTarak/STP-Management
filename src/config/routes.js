@@ -22,6 +22,7 @@ export const ROUTES = {
   SITE_SETTINGS: '/settings',
   SUPER_ADMIN_DASHBOARD: '/super-admin/dashboard',
   INSTITUTE_PUBLIC: '/stp/:slug',
+  PRINT: '/print/:id',
 };
 
 export const menuSections = [

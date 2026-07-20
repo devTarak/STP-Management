@@ -14,6 +14,7 @@ const StudentsListPage = lazy(() => import('@/pages/StudentsListPage'));
 const StudentViewPage = lazy(() => import('@/pages/StudentViewPage'));
 const StudentEditPage = lazy(() => import('@/pages/StudentEditPage'));
 const PublicRegistrationPage = lazy(() => import('@/pages/PublicRegistrationPage'));
+const PrintPage = lazy(() => import('@/pages/PrintPage'));
 const CourseListPage = lazy(() => import('@/pages/CourseListPage'));
 const CourseCreatePage = lazy(() => import('@/pages/CourseCreatePage'));
 const CourseEditPage = lazy(() => import('@/pages/CourseEditPage'));
@@ -92,6 +93,7 @@ export default function App() {
                 <Route path={ROUTES.SITE_SETTINGS} element={<ProtectedRoute roles={['admin']}><SiteSettingsPage /></ProtectedRoute>} />
               </Route>
 
+              <Route path={ROUTES.PRINT} element={<PrintPage />} />
               <Route path="*" element={<Navigate to={ROUTES.DASHBOARD} replace />} />
             </Routes>
           </Suspense>

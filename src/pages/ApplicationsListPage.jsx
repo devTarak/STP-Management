@@ -12,7 +12,6 @@ import { useBatches } from '@/hooks/useBatches';
 import { useAuth } from '@/hooks/useAuth';
 import { formatDate, getStatusColor } from '@/utils/helpers';
 import RejectDialog from '@/components/common/RejectDialog';
-import api from '@/config/api';
 
 const rowsPerPageOptions = [10, 25, 50, 100];
 
@@ -156,7 +155,7 @@ export default function ApplicationsListPage() {
         <MenuItem onClick={() => { navigate(`/students/${selectedStudent?.id}`); setMenuAnchor(null); }}>
           <ListItemIcon><Visibility fontSize="small" /></ListItemIcon> View
         </MenuItem>
-        <MenuItem onClick={() => { const token = localStorage.getItem('auth_token'); const base = api.defaults.baseURL.replace(/\/api\/?$/, ''); window.open(`${base}/api/students/${selectedStudent?.id}/print?token=${token}`, '_blank'); setMenuAnchor(null); }}>
+        <MenuItem onClick={() => { window.open(`/print/${selectedStudent?.id}`, '_blank'); setMenuAnchor(null); }}>
           <ListItemIcon><Print fontSize="small" /></ListItemIcon> Print
         </MenuItem>
         {selectedStudent?.status === 'pending' && [

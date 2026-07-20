@@ -248,7 +248,7 @@ export default function StudentViewPage() {
           <Button
             variant="outlined"
             startIcon={<Print />}
-            onClick={() => { const token = localStorage.getItem('auth_token'); const base = api.defaults.baseURL.replace(/\/api\/?$/, ''); window.open(`${base}/api/students/${id}/print?token=${token}`, '_blank'); }}
+            onClick={() => window.open(`/print/${id}`, '_blank')}
           >
             Print
           </Button>
